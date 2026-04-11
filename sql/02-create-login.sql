@@ -65,3 +65,5 @@ GO
 -- Inherits all permissions granted to the staff role
 ALTER ROLE [staff] ADD MEMBER [vextrainer_teachers]
 GO
+
+

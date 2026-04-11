@@ -209,3 +209,5 @@ GO
 -- Final statement confirms database is fully operational for all users
 ALTER DATABASE [VexTrainer01] SET READ_WRITE
 GO
+
+
