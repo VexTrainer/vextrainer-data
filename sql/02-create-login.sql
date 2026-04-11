@@ -66,4 +66,4 @@ GO
 ALTER ROLE [staff] ADD MEMBER [vextrainer_teachers]
 GO
 
-
+-- END OF SCRIPT
