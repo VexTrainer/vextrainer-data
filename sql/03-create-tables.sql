@@ -784,10 +784,10 @@ CREATE TABLE [dbo].[t_account_deletion_requests](
     [user_id]    [int]            NULL,
     -- Email address of the requesting user
     -- Stored separately from user_id for audit trail
-    [email]      [nvarchar](254)  NOT NULL,
+    [email]      [varchar](254)  NOT NULL,
     -- Secure random token sent to user's email for confirmation
     -- nvarchar(128) accommodates GUID or cryptographic token
-    [token]      [nvarchar](128)  NOT NULL,
+    [token]      [varchar](255)  NOT NULL,
     -- When the deletion request was created in UTC
     [created_at] [datetime2](7)   NOT NULL,
     -- When the confirmation token expires in UTC
@@ -798,7 +798,7 @@ CREATE TABLE [dbo].[t_account_deletion_requests](
     [used_at]    [datetime2](7)   NULL,
     -- IP address of the client that made the deletion request
     -- Stored for security auditing purposes
-    [ip_address] [nvarchar](64)   NULL,
+    [ip_address] [varchar](64)   NULL,
     -- Clustered PK - request lookups always by id
     CONSTRAINT pk_t_account_deletion_requests_id PRIMARY KEY CLUSTERED ([id]),
     -- Tokens must be unique to prevent collision attacks
