@@ -68,7 +68,7 @@ CREATE TABLE [dbo].[t_user](
     -- Unique user identifier - assigned in stored procedure
     [user_id]       [int]          NOT NULL,
     -- Username - max 24 chars, typically, First Name Last Name
-    [user_name]     [varchar](24)  NOT NULL,
+    [user_name]     [nvarchar](96)  NOT NULL,
     -- Email address - max 254 chars per RFC 5321, must be unique
     [email]         [varchar](254) NOT NULL,
     -- Optional phone number - E.164 format max 15 digits + country code
