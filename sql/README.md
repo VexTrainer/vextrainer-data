@@ -61,7 +61,7 @@ This creates:
 ### Step 3 — Create Tables
 Run using the **`vextrainer01_dbo`** login:
 ```
-sqlcmd -S <server> -U vextrainer_dbo -P <password> -d VexTrainer01 -i sql\03-create-tables.sql
+sqlcmd -S <server> -U vextrainer01_dbo -P <password> -d VexTrainer01 -i sql\03-create-tables.sql
 ```
 
 ---
@@ -78,13 +78,13 @@ powershell.exe -ExecutionPolicy Bypass -File .\util\Deploy-StoredProcedures.ps1
 You will be prompted for:
 ```
 Server name   : localhost          (or server\instance)
-Login name    : vextrainer01_dbo     ← must use this login
+Login name    : vextrainer01_dbo     **must use this login**
 Password      : ****               (masked)
 Database name : VexTrainer01
 ```
 
 > You must use the `vextrainer01_dbo` login for this step.
-> The `vextrainer_teachers` login cannot create or alter stored procedures.
+> The `vextrainer01_teacher` login cannot create or alter stored procedures.
 
 See [Stored Procedure Deployment](#stored-procedure-deployment) below
 for full details on the deployment script.
@@ -205,10 +205,10 @@ using the **`vextrainer_teachers`** login — never `vextrainer_dbo`.
 
 Example connection string format (values in `appsettings.Development.json`):
 ```
-Server=<server>;Database=VexTrainer01;User Id=vextrainer_teachers;Password=<password>;
+Server=<server>;Database=VexTrainer01;User Id=vextrainer01_teacher;Password=<password>;
 ```
 
-> The `vextrainer_dbo` login is for database administration only.
+> The `vextrainer01_dbo` login is for database administration only.
 > Its credentials should never appear in any application config file.
 
 ---
