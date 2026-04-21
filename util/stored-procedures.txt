@@ -1,3 +1,4 @@
+04-initial-data.sql
 sp_ActivateUser.sql
 sp_CompleteQuiz.sql
 sp_ConfirmAccountDeletion.sql
