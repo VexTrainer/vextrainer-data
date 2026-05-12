@@ -370,4 +370,55 @@ public class LessonService
             ResultCode = resultCode
         };
     }
+
+    /// <summary>
+    /// Returns the entire active curriculum tree (modules + lessons + topics) plus
+    /// the user's per-lesson progress counts and per-topic read status in a SINGLE
+    /// round trip. Replaces the older N+1 pattern of GetAllLessonsAsync followed by
+    /// one GetTopicsByLessonAsync per lesson, which floods SQL Server as the
+    /// curriculum grows.
+    ///
+    /// The stored procedure returns three result sets, read here in order:
+    ///   1. Modules — List&lt;ModuleNode&gt;
+    ///   2. Lessons — List&lt;LessonNode&gt; (with progress, FK ModuleId)
+    ///   3. Topics  — List&lt;TopicNode&gt;  (navigable only, FK LessonId)
+    /// The caller groups topics by LessonId and lessons by ModuleId in memory to
+    /// rebuild the Module → Lesson → Topic hierarchy used by the lessons page.
+    ///
+    /// Stored procedure : sp_GetAllModulesLessonsTopics
+    /// Inputs           : @user_id
+    /// Outputs          : @result_code, @result_message
+    /// Result sets      : (1) List&lt;ModuleNode&gt;
+    ///                    (2) List&lt;LessonNode&gt;
+    ///                    (3) List&lt;TopicNode&gt;
+    /// </summary>
+    public async Task<ApiResponse<ModulesLessonsTopicsTree>> GetAllModulesLessonsTopicsAsync(int userId) {
+      using var connection = new SqlConnection(_connectionString);
+      var parameters = new DynamicParameters();
+      parameters.Add("@user_id", userId);
+      parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
+      parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+    
+      using var multi = await connection.QueryMultipleAsync(
+          "sp_GetAllModulesLessonsTopics", parameters, commandType: CommandType.StoredProcedure);
+    
+      // Read the three result sets in the order the stored procedure emits them
+      var modules = (await multi.ReadAsync<ModuleNode>()).ToList();
+      var lessons = (await multi.ReadAsync<LessonNode>()).ToList();
+      var topics = (await multi.ReadAsync<TopicNode>()).ToList();
+    
+      var resultCode = parameters.Get<int>("@result_code");
+      var resultMessage = parameters.Get<string>("@result_message");
+    
+      return new ApiResponse<ModulesLessonsTopicsTree> {
+        Success = resultCode == 0,
+        Data = new ModulesLessonsTopicsTree {
+          Modules = modules,
+          Lessons = lessons,
+          Topics = topics
+        },
+        Message = resultMessage,
+        ResultCode = resultCode
+      };
+    }
 }
