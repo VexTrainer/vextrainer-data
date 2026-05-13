@@ -421,4 +421,58 @@ public class LessonService
         ResultCode = resultCode
       };
     }
+
+    /// <summary>
+    /// Returns the complete payload for the VexTrainer Web student dashboard
+    /// in a single round trip: stats (with reading streak), continue-learning
+    /// list, up-next lesson, recent activity, per-module progress, and last
+    /// quiz attempt.
+    ///
+    /// Stored procedure : sp_GetUserWebDashboard
+    /// Inputs           : @user_id
+    /// Outputs          : @result_code, @result_message
+    /// Result sets      : (1) DashboardStats (single row, includes ReadingStreak)
+    ///                    (2) List&lt;ContinueLearningItem&gt;
+    ///                    (3) UpNextItem? (0 or 1 row)
+    ///                    (4) List&lt;RecentActivityItem&gt;
+    ///                    (5) List&lt;ModuleProgress&gt;
+    ///                    (6) LastQuizAttempt? (0 or 1 row)
+    /// </summary>
+    public async Task<ApiResponse<UserWebDashboard>> GetUserWebDashboardAsync(int userId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        var parameters = new DynamicParameters();
+        parameters.Add("@user_id", userId);
+        parameters.Add("@result_code",    dbType: DbType.Int32,  direction: ParameterDirection.Output);
+        parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+        using var multi = await connection.QueryMultipleAsync("sp_GetUserWebDashboard", parameters, commandType: CommandType.StoredProcedure);
+
+        // Read the six result sets in the order the stored procedure emits them
+        var stats            = await multi.ReadFirstOrDefaultAsync<DashboardStats>();
+        var continueLearning = (await multi.ReadAsync<ContinueLearningItem>()).ToList();
+        var upNext           = await multi.ReadFirstOrDefaultAsync<UpNextItem>();
+        var recentActivity   = (await multi.ReadAsync<RecentActivityItem>()).ToList();
+        var moduleProgress   = (await multi.ReadAsync<ModuleProgress>()).ToList();
+        var lastQuizAttempt  = await multi.ReadFirstOrDefaultAsync<LastQuizAttempt>();
+
+        var resultCode    = parameters.Get<int>("@result_code");
+        var resultMessage = parameters.Get<string>("@result_message");
+
+        return new ApiResponse<UserWebDashboard>
+        {
+            Success = resultCode == 0,
+            Data = new UserWebDashboard
+            {
+                Stats            = stats ?? new DashboardStats(),
+                ContinueLearning = continueLearning,
+                UpNext           = upNext,
+                RecentActivity   = recentActivity,
+                ModuleProgress   = moduleProgress,
+                LastQuizAttempt  = lastQuizAttempt
+            },
+            Message    = resultMessage,
+            ResultCode = resultCode
+        };
+    }
 }
