@@ -336,7 +336,7 @@ public class QuizService {
   ///
   /// Stored procedure : sp_CompleteQuiz
   /// Inputs           : @attempt_id, @user_id
-  /// Outputs          : @score, @correct_answers, @total_questions, @passed,
+  /// Outputs          : @final_score, @correct_answers, @total_questions, @passed,
   ///                    @result_code, @result_message
   /// </summary>
   public async Task<ApiResponse<CompleteQuizResponse>> CompleteQuizAsync(int attemptId, int userId) {
@@ -344,7 +344,7 @@ public class QuizService {
     var parameters = new DynamicParameters();
     parameters.Add("@attempt_id", attemptId);
     parameters.Add("@user_id", userId);
-    parameters.Add("@score", dbType: DbType.Decimal, direction: ParameterDirection.Output);   // matches t_user_quiz_attempt.score column
+    parameters.Add("@final_score", dbType: DbType.Decimal, direction: ParameterDirection.Output, precision: 5, scale: 2);
     parameters.Add("@correct_answers", dbType: DbType.Byte, direction: ParameterDirection.Output);
     parameters.Add("@total_questions", dbType: DbType.Byte, direction: ParameterDirection.Output);
     parameters.Add("@passed", dbType: DbType.Boolean, direction: ParameterDirection.Output);
@@ -368,7 +368,7 @@ public class QuizService {
       Success = true,
       Data = new CompleteQuizResponse {
         AttemptId = attemptId,
-        FinalScore = parameters.Get<decimal>("@score"),
+        FinalScore = parameters.Get<decimal>("@final_score"),
         CorrectAnswers = parameters.Get<byte>("@correct_answers"),
         TotalQuestions = parameters.Get<byte>("@total_questions"),
         Passed = parameters.Get<bool>("@passed"),
