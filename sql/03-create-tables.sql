@@ -709,7 +709,7 @@ CREATE TABLE [dbo].[t_user_lesson_read](
     -- When the lesson was (most recently) read in UTC
     [read_date] [datetime2](7) NULL,
     -- Composite PK - one read record per user per lesson
-    CONSTRAINT pk_t_user_lesson_read_lesson_id PRIMARY KEY CLUSTERED ([user_id], [lesson_id])
+    CONSTRAINT pk_t_user_lesson_read_user_id_lesson_id PRIMARY KEY CLUSTERED ([user_id], [lesson_id])
 )
 GO
 
