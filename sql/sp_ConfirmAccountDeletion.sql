@@ -38,7 +38,6 @@ BEGIN
   --   is_active     -> 0
   -- ============================================================
   SET NOCOUNT ON;
-  DECLARE @sql NVARCHAR(MAX) = CONCAT('@token = ', CASE WHEN @token IS NULL THEN 'NULL' ELSE CONCAT('''', REPLACE(CAST(@token AS VARCHAR(MAX)), '''', ''''''), '''') END)  ; INSERT debug select getdate(),  object_name(@@PROCID), @sql
   SET @deleted_email = NULL;
   BEGIN TRY
     DECLARE @request_id INT, @user_id INT, @email NVARCHAR(254);
