@@ -8,8 +8,6 @@ CREATE PROCEDURE [dbo].[sp_MarkTopicRead]
 AS
 BEGIN
   SET NOCOUNT ON;
-  DECLARE @sql NVARCHAR(MAX) = CONCAT('@user_id = ', CASE WHEN @user_id IS NULL THEN 'NULL' ELSE CAST(@user_id AS VARCHAR(MAX)) END,'@topic_id = ', CASE WHEN @topic_id IS NULL THEN 'NULL' ELSE CAST(@topic_id AS VARCHAR(MAX)) END); INSERT debug SELECT GETDATE(), OBJECT_NAME(@@PROCID), @sql
-
   BEGIN TRY
     -- Validate topic exists and is active
     IF NOT EXISTS (SELECT 1 FROM t_topic WHERE topic_id = @topic_id AND is_active = 1)
