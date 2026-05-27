@@ -475,4 +475,43 @@ public class LessonService
             ResultCode = resultCode
         };
     }
+
+  /// <summary>
+  /// Returns the payload for the VexTrainer mobile-app student dashboard
+  /// in a single round trip: stats (with reading streak) and the
+  /// continue-learning list. Same stored procedure shape as the web
+  /// dashboard, trimmed to the two result sets the app needs.
+  ///
+  /// Stored procedure : sp_GetUserAppDashboard
+  /// Inputs           : @user_id
+  /// Outputs          : @result_code, @result_message
+  /// Result sets      : (1) DashboardStats (single row, includes ReadingStreak)
+  ///                    (2) List&lt;ContinueLearningItem&gt;
+  /// </summary>
+  public async Task<ApiResponse<UserAppDashboard>> GetUserAppDashboardAsync(int userId) {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@user_id", userId);
+    parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
+    parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+    using var multi = await connection.QueryMultipleAsync("sp_GetUserAppDashboard", parameters, commandType: CommandType.StoredProcedure);
+
+    // Read the two result sets in the order the stored procedure emits them
+    var stats = await multi.ReadFirstOrDefaultAsync<DashboardStats>();
+    var continueLearning = (await multi.ReadAsync<ContinueLearningItem>()).ToList();
+
+    var resultCode = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+
+    return new ApiResponse<UserAppDashboard> {
+      Success = resultCode == 0,
+      Data = new UserAppDashboard {
+        Stats = stats ?? new DashboardStats(),
+        ContinueLearning = continueLearning
+      },
+      Message = resultMessage,
+      ResultCode = resultCode
+    };
+  }
 }

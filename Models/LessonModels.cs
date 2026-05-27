@@ -183,6 +183,17 @@ public class UserWebDashboard {
 }
 
 /// <summary>
+/// Aggregate mobile-app dashboard payload assembled from
+/// sp_GetUserAppDashboard's two result sets — a trimmed version of
+/// UserWebDashboard containing only the stats and continue-learning
+/// list the app surfaces on its home screen.
+/// </summary>
+public class UserAppDashboard {
+  public DashboardStats Stats { get; set; } = new();
+  public List<ContinueLearningItem> ContinueLearning { get; set; } = new();
+}
+
+/// <summary>
 /// Single-row stats from result set 1.
 /// Percent fields are computed client-side from the raw counts.
 /// </summary>
