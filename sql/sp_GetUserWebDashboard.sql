@@ -108,6 +108,14 @@ BEGIN
   --       StartedDate         DATETIME2
   --       CompletedDate       DATETIME2     (NULL if in progress)
   --       IsCompleted         BIT
+  --
+  --   (7) Bookmarks
+  --       ModuleId            SMALLINT
+  --       ModuleName          VARCHAR
+  --       LessonId            SMALLINT
+  --       LessonTitle         VARCHAR
+  --       TopicId             INT
+  --       TopicTitle          VARCHAR
   -- ============================================================
   -- Result Codes:
   --   0  - Dashboard data retrieved successfully
@@ -400,6 +408,21 @@ BEGIN
     INNER JOIN t_quiz q ON q.quiz_id = a.quiz_id
     WHERE a.user_id = @user_id
     ORDER BY ISNULL(a.completed_date, a.started_date) DESC;
+
+
+   -- ===== Result Set 6: Bookmarks =====
+    SELECT m.module_id  AS moduleId,
+	       m.module_name AS moduleName,
+		   l.lesson_id AS lessonId,
+		   l.lesson_title AS lessonTitle,
+		   t.topic_id AS topicId,
+		   t.topic_title AS topicTitle
+    FROM t_bookmark b
+	  JOIN t_topic t ON b.topic_id = t.topic_id
+	  JOIN t_lesson l ON t.lesson_id = l.lesson_id
+	  JOIN t_module m ON l.module_id = m.module_id
+    WHERE b.user_id = @user_id
+	  ORDER BY m.module_id, l.lesson_id, t.topic_id;
 
     SET @result_code    = 0;
     SET @result_message = 'Web dashboard data retrieved successfully';

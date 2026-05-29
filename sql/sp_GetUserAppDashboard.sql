@@ -1,9 +1,9 @@
 SET ANSI_NULLS ON
 GO
 CREATE OR ALTER PROCEDURE [dbo].[sp_GetUserAppDashboard]
-  @user_id        INT,
-  @result_code    INT OUTPUT,
-  @result_message NVARCHAR(500) OUTPUT
+@user_id        INT,
+@result_code    INT OUTPUT,
+@result_message NVARCHAR(500) OUTPUT
 AS
 BEGIN
   -- ============================================================
@@ -18,6 +18,7 @@ BEGIN
   --               (2) Continue Learning — one row per lesson the
   --                   user has started but not finished, with the
   --                   next unread navigable topic.
+  --               (3) Bookmarks.
   --
   --             Completion semantics: a lesson is "completed"
   --             when explicitly marked read OR when every active
@@ -53,7 +54,7 @@ BEGIN
   --       BestQuizScore       DECIMAL(5,2)  (over completed attempts; 0 if none)
   --       ReadingStreak       INT           (consecutive UTC days; 0 if streak broken)
   --
-    --   (2) Continue Learning — N rows, ordered by module display_order, lesson display_order
+  --   (2) Continue Learning — N rows, ordered by module display_order, lesson display_order
   --       LessonId            SMALLINT
   --       LessonTitle         VARCHAR
   --       ModuleId            SMALLINT
@@ -63,14 +64,20 @@ BEGIN
   --       NextTopicId         INT
   --       NextTopicTitle      VARCHAR
   --
+  --   (2) Continue Learning — N rows, ordered by module display_order, lesson display_order
+  --       ModuleId            SMALLINT
+  --       ModuleName          VARCHAR
+  --       LessonId            SMALLINT
+  --       LessonTitle         VARCHAR
+  --       TopicId             INT
+  --       TopicTitle          VARCHAR
+  --
   -- ============================================================
   -- Result Codes:
   --   0  - Dashboard data retrieved successfully
   --   99 - Unexpected SQL error (see @result_message)
   -- ============================================================
   SET NOCOUNT ON;
-  DECLARE @sql NVARCHAR(MAX) = CONCAT('@user_id = ', CASE WHEN @user_id IS NULL THEN 'NULL' ELSE CAST(@user_id AS VARCHAR(MAX)) END);
-  INSERT debug SELECT GETDATE(), object_name(@@PROCID), @sql;
 
   BEGIN TRY
     -- @today aligned to UTC since read_date is stored as UTC datetime2
@@ -259,6 +266,20 @@ BEGIN
       AND tc.topics_read > 0
       AND tc.topics_read < tc.total_topics
     ORDER BY m.display_order, l.display_order;
+
+   -- ===== Result Set 3: Bookmarks =====
+    SELECT m.module_id  AS moduleId,
+	       m.module_name AS moduleName,
+		   l.lesson_id AS lessonId,
+		   l.lesson_title AS lessonTitle,
+		   t.topic_id AS topicId,
+		   t.topic_title AS topicTitle
+    FROM t_bookmark b
+	  JOIN t_topic t ON b.topic_id = t.topic_id
+	  JOIN t_lesson l ON t.lesson_id = l.lesson_id
+	  JOIN t_module m ON l.module_id = m.module_id
+    WHERE b.user_id = @user_id
+	  ORDER BY m.module_id, l.lesson_id, t.topic_id;
 
     SET @result_code    = 0;
     SET @result_message = 'App dashboard data retrieved successfully';
