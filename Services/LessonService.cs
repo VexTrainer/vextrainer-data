@@ -514,4 +514,96 @@ public class LessonService
       ResultCode = resultCode
     };
   }
+
+  /// <summary>
+  /// Returns the authenticated user's bookmarks, each carrying its full
+  /// Module → Lesson → Topic context so the client can render the list
+  /// without follow-up lookups. Ordered by module_id, lesson_id, topic_id
+  /// (curriculum order) — clients should not re-sort.
+  ///
+  /// Stored procedure : sp_GetBookmarks
+  /// Inputs           : @user_id
+  /// Outputs          : @result_code, @result_message
+  /// Result set       : List&lt;Bookmark&gt;
+  /// </summary>
+  public async Task<ApiResponse<List<Bookmark>>> GetBookmarksAsync(int userId) {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@user_id", userId);
+    parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
+    parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+    var bookmarks = (await connection.QueryAsync<Bookmark>("sp_GetBookmarks", parameters, commandType: CommandType.StoredProcedure)).ToList();
+
+    var resultCode = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+
+    return new ApiResponse<List<Bookmark>> {
+      Success = resultCode == 0,
+      Data = bookmarks,
+      Message = resultMessage,
+      ResultCode = resultCode
+    };
+  }
+
+  /// <summary>
+  /// Bookmarks a topic for the authenticated user. Idempotent — the
+  /// stored procedure checks for an existing row before inserting, so
+  /// repeat calls for the same (user, topic) pair succeed without
+  /// creating duplicates.
+  ///
+  /// Stored procedure : sp_AddBookmark
+  /// Inputs           : @user_id, @topic_id
+  /// Outputs          : @result_code, @result_message
+  /// Result codes     : 0 success, 1 invalid user, 2 invalid topic, 99 SQL error
+  /// </summary>
+  public async Task<ApiResponse<object>> AddBookmarkAsync(int userId, int topicId) {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@user_id", userId);
+    parameters.Add("@topic_id", topicId);
+    parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
+    parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+    await connection.ExecuteAsync("sp_AddBookmark", parameters, commandType: CommandType.StoredProcedure);
+
+    var resultCode = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+
+    return new ApiResponse<object> {
+      Success = resultCode == 0,
+      Message = resultMessage,
+      ResultCode = resultCode
+    };
+  }
+
+  /// <summary>
+  /// Removes a bookmark for the authenticated user. Idempotent — deleting
+  /// a non-existent bookmark still returns success (the DELETE simply
+  /// affects zero rows).
+  ///
+  /// Stored procedure : sp_DeleteBookmark
+  /// Inputs           : @user_id, @topic_id
+  /// Outputs          : @result_code, @result_message
+  /// Result codes     : 0 success, 99 SQL error
+  /// </summary>
+  public async Task<ApiResponse<object>> DeleteBookmarkAsync(int userId, int topicId) {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@user_id", userId);
+    parameters.Add("@topic_id", topicId);
+    parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
+    parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+    await connection.ExecuteAsync("sp_DeleteBookmark", parameters, commandType: CommandType.StoredProcedure);
+
+    var resultCode = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+
+    return new ApiResponse<object> {
+      Success = resultCode == 0,
+      Message = resultMessage,
+      ResultCode = resultCode
+    };
+  }
 }

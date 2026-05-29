@@ -275,3 +275,19 @@ public class LastQuizAttempt {
   public DateTime? CompletedDate { get; set; }
   public bool IsCompleted { get; set; }
 }
+
+/// <summary>
+/// A user's bookmark, returned by sp_GetBookmarks. Each row points at a
+/// specific topic and carries enough context (module + lesson titles) for
+/// the client to render the bookmarks list without follow-up lookups.
+/// Column aliases in the stored procedure are camelCase; Dapper maps them
+/// case-insensitively to these PascalCase properties.
+/// </summary>
+public class Bookmark {
+  public short ModuleId { get; set; }
+  public string ModuleName { get; set; } = string.Empty;
+  public short LessonId { get; set; }
+  public string LessonTitle { get; set; } = string.Empty;
+  public int TopicId { get; set; }
+  public string TopicTitle { get; set; } = string.Empty;
+}

@@ -823,4 +823,15 @@ CREATE INDEX [ndx_t_account_deletion_requests_email]
     ON [dbo].[t_account_deletion_requests] ([email])
 GO
 
+CREATE TABLE [dbo].[t_bookmark](
+	[user_id] [int] NOT NULL,
+	topic_id [int] NOT NULL
+ CONSTRAINT [pk_t_bookmark_user_id_topic_id] PRIMARY KEY CLUSTERED ([user_id], [topic_id])
+)
+GO
+ALTER TABLE [dbo].[t_bookmark]  WITH CHECK ADD  CONSTRAINT [fk_t_bookmark_t_user_user_id] FOREIGN KEY([user_id]) REFERENCES [dbo].[t_user] ([user_id])
+GO
+ALTER TABLE [dbo].[t_bookmark]  WITH CHECK ADD  CONSTRAINT [fk_t_bookmark_t_topic_topic_id] FOREIGN KEY([topic_id]) REFERENCES [dbo].[t_topic] ([topic_id])
+GO
+
 -- END OF SCRIPT
