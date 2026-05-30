@@ -180,17 +180,19 @@ public class UserWebDashboard {
   public List<RecentActivityItem> RecentActivity { get; set; } = new();
   public List<ModuleProgress> ModuleProgress { get; set; } = new();
   public LastQuizAttempt? LastQuizAttempt { get; set; }
+  public List<Bookmark> Bookmarks { get; set; } = new();
 }
 
 /// <summary>
 /// Aggregate mobile-app dashboard payload assembled from
-/// sp_GetUserAppDashboard's two result sets — a trimmed version of
-/// UserWebDashboard containing only the stats and continue-learning
-/// list the app surfaces on its home screen.
+/// sp_GetUserAppDashboard's three result sets — a trimmed version of
+/// UserWebDashboard containing the stats, continue-learning list, and
+/// the user's bookmarks the app surfaces on its home screen.
 /// </summary>
 public class UserAppDashboard {
   public DashboardStats Stats { get; set; } = new();
   public List<ContinueLearningItem> ContinueLearning { get; set; } = new();
+  public List<Bookmark> Bookmarks { get; set; } = new();
 }
 
 /// <summary>

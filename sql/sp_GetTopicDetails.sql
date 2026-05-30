@@ -1,8 +1,10 @@
-CREATE PROCEDURE [dbo].[sp_GetTopicDetails]
-  @topic_id       INT,
-  @user_id        INT,
-  @result_code    INT OUTPUT,
-  @result_message NVARCHAR(500) OUTPUT
+SET ANSI_NULLS ON
+GO
+CREATE OR ALTER PROCEDURE [dbo].[sp_GetTopicDetails]
+@topic_id       INT,
+@user_id        INT,
+@result_code    INT OUTPUT,
+@result_message NVARCHAR(500) OUTPUT
 AS
 BEGIN
   -- ============================================================
@@ -23,7 +25,7 @@ BEGIN
   --             A topic is "navigable" if:
   --               - heading_level is 3 or 4, OR
   --               - heading_level is 2 AND the lesson has no H3
-  --                 children (single-page lesson â€” the H2 is the
+  --                 children (single-page lesson — the H2 is the
   --                 only content topic). This mirrors the accordion
   --                 fallback in the client.
   --
@@ -31,7 +33,7 @@ BEGIN
   --               MMMMM-LLLLL-TTTTT  (module / lesson / topic)
   --             Previous/Next FileName values may point to a
   --             different lesson and/or module than the current
-  --             topic â€” the client parses the IDs out of the
+  --             topic — the client parses the IDs out of the
   --             filename to build the link.
   --
   --             Returns result code -1 (not 1) for not-found to
@@ -62,6 +64,7 @@ BEGIN
   --   LessonId             SMALLINT
   --   LessonTitle          VARCHAR
   --   ParentTopicTitle     VARCHAR   (NULL for H3; parent H3 title for H4)
+  --   IsBookmarked         BIT
   -- ============================================================
   -- Result Codes:
   --   0  - Topic details retrieved successfully
@@ -69,10 +72,15 @@ BEGIN
   --   99 - Unexpected SQL error (see @result_message)
   -- ============================================================
   SET NOCOUNT ON;
+  DECLARE @sql NVARCHAR(MAX) = CONCAT(
+    '@topic_id = ', CASE WHEN @topic_id IS NULL THEN 'NULL' ELSE CAST(@topic_id AS VARCHAR(MAX)) END,
+    '@user_id = ',  CASE WHEN @user_id  IS NULL THEN 'NULL' ELSE CAST(@user_id  AS VARCHAR(MAX)) END);
+  INSERT debug SELECT GETDATE(), object_name(@@PROCID), @sql;
 
   BEGIN TRY
-    DECLARE @lesson_id SMALLINT;
-    DECLARE @module_id SMALLINT;
+    DECLARE @lesson_id SMALLINT,
+            @module_id SMALLINT,
+			@is_bookmarked bit = 0
 
     -- Resolve lesson for the requested topic
     SELECT @lesson_id = lesson_id
@@ -90,6 +98,12 @@ BEGIN
     SELECT @module_id = module_id
     FROM t_lesson
     WHERE lesson_id = @lesson_id;
+
+    IF EXISTS (SELECT 1
+	             FROM t_bookmark b
+	             WHERE b.user_id = @user_id
+	               AND b.topic_id = @topic_id)
+	  SET @is_bookmarked = CAST(1 AS BIT)
 
     -- Build a flat global sequence of navigable topics, then find
     -- prev/next relative to the current topic's seq.
@@ -151,12 +165,13 @@ BEGIN
       m.module_name                                       AS ModuleName,
       @lesson_id                                          AS LessonId,
       l.lesson_title                                      AS LessonTitle,
-      parent.topic_title                                  AS ParentTopicTitle
+      parent.topic_title                                  AS ParentTopicTitle,
+	  @is_bookmarked                                      AS IsBookmarked
     FROM t_topic t
-    INNER JOIN t_lesson l         ON l.lesson_id     = t.lesson_id
-    INNER JOIN t_module m         ON m.module_id     = l.module_id
-    LEFT  JOIN t_user_topic_read rt ON rt.topic_id   = t.topic_id AND rt.user_id    = @user_id
-    LEFT  JOIN t_topic parent     ON parent.topic_id = t.parent_topic_id
+      INNER JOIN t_lesson l         ON l.lesson_id     = t.lesson_id
+      INNER JOIN t_module m         ON m.module_id     = l.module_id
+      LEFT JOIN t_user_topic_read rt ON rt.topic_id   = t.topic_id AND rt.user_id    = @user_id
+      LEFT JOIN t_topic parent     ON parent.topic_id = t.parent_topic_id
     OUTER APPLY (
       SELECT TOP 1 nt.topic_id, nt.topic_title, nt.lesson_id, nt.module_id
       FROM NavigableTopics nt

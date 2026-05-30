@@ -58,6 +58,13 @@ public class TopicDetails {
   /// </summary>
   public bool IsRead { get; set; }
 
+  /// <summary>
+  /// True if the current user has bookmarked this topic; false otherwise.
+  /// Drives the bookmark toggle button's visual state on the topic page
+  /// without requiring a separate lookup against the bookmarks list.
+  /// </summary>
+  public bool IsBookmarked { get; set; }
+
   // -------------------------------------------------------------------------
   // Previous topic (navigation)
   // -------------------------------------------------------------------------
