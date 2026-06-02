@@ -72,11 +72,6 @@ BEGIN
   --   99 - Unexpected SQL error (see @result_message)
   -- ============================================================
   SET NOCOUNT ON;
-  DECLARE @sql NVARCHAR(MAX) = CONCAT(
-    '@topic_id = ', CASE WHEN @topic_id IS NULL THEN 'NULL' ELSE CAST(@topic_id AS VARCHAR(MAX)) END,
-    '@user_id = ',  CASE WHEN @user_id  IS NULL THEN 'NULL' ELSE CAST(@user_id  AS VARCHAR(MAX)) END);
-  INSERT debug SELECT GETDATE(), object_name(@@PROCID), @sql;
-
   BEGIN TRY
     DECLARE @lesson_id SMALLINT,
             @module_id SMALLINT,
