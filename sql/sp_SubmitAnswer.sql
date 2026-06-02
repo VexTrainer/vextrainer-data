@@ -167,18 +167,65 @@ BEGIN
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
       );
     END
-    ELSE IF @question_type_id = 5  -- Match pairs (not yet implemented)
-    BEGIN
-      -- TODO: implement full pair-matching evaluation
-      SET @is_correct          = 0;
-      SET @correct_answer_json = '{}';
+    ELSE IF @question_type_id = 5  -- Match pairs
+        BEGIN
+      -- Correctly matched pairs in the submission
+      DECLARE @matched_pairs INT = (
+        SELECT COUNT(*)
+        FROM OPENJSON(@user_answer_json, '$.matches') WITH (
+            left_id  INT '$.left',
+            right_id INT '$.right'
+        ) submitted
+        INNER JOIN t_answer al ON al.answer_id    = submitted.left_id
+                               AND al.question_id = @question_id
+                               AND al.match_side  = 'L'
+        INNER JOIN t_answer ar ON ar.answer_id    = submitted.right_id
+                               AND ar.question_id = @question_id
+                               AND ar.match_side  = 'R'
+        WHERE al.match_pair_id = ar.match_pair_id
+      );
+
+      -- Total expected pairs (distinct match_pair_id on L side)
+      DECLARE @total_pairs INT = (
+        SELECT COUNT(DISTINCT match_pair_id)
+        FROM t_answer
+        WHERE question_id = @question_id
+          AND match_side  = 'L'
+      );
+
+      -- Submitted pair count — must equal total (no extras, no omissions)
+      DECLARE @submitted_pairs INT = (
+        SELECT COUNT(*)
+        FROM OPENJSON(@user_answer_json, '$.matches')
+      );
+
+      SET @is_correct = CASE
+        WHEN @matched_pairs   = @total_pairs
+         AND @submitted_pairs = @total_pairs
+        THEN 1 ELSE 0
+      END;
+
+      -- Return correct pairings as JSON for the client answer-key display
+      SELECT @correct_answer_json = (
+        SELECT
+            al.answer_id AS left_id,
+            ar.answer_id AS right_id
+        FROM t_answer al
+        INNER JOIN t_answer ar ON ar.match_pair_id = al.match_pair_id
+                               AND ar.question_id  = al.question_id
+                               AND ar.match_side   = 'R'
+        WHERE al.question_id = @question_id
+          AND al.match_side  = 'L'
+        ORDER BY al.match_pair_id
+        FOR JSON PATH
+      );
     END
 
     -- Default to incorrect if evaluation branch left @is_correct NULL
     SET @is_correct = ISNULL(@is_correct, 0);
 
     -- Record the answer
-    INSERT INTO t_user_answer (attempt_id, question_id, user_answer_json, is_correct)
+    INSERT t_user_answer (attempt_id, question_id, user_answer_json, is_correct)
     VALUES (@attempt_id, @question_id, @user_answer_json, @is_correct);
 
     -- Update attempt counters
@@ -205,3 +252,5 @@ BEGIN
   END CATCH
 END
 GO
+
+--END OF SCRIPT
