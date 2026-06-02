@@ -610,4 +610,56 @@ public class LessonService
       ResultCode = resultCode
     };
   }
+
+  /// <summary>
+  /// Returns the user's reading and quiz activity for their 7 most
+  /// recent active days (days on which at least one topic was read or
+  /// quiz was attempted), converted to the caller-supplied local timezone.
+  ///
+  /// Days with no activity are omitted; gaps between active days are
+  /// allowed, so the 7 days may span more than 7 calendar days.
+  ///
+  /// Tapping the streak badge on the dashboard navigates to this report.
+  /// The client groups both result sets by date, then renders topics
+  /// under Module => Lesson => Topic and quizzes as a flat list per day.
+  /// When a quiz was attempted more than once on the same day,
+  /// attemptCount > 1 and the client appends "(Nx)" to the title.
+  ///
+  /// Stored procedure : sp_GetStreakBadgeReport
+  /// Inputs           : @user_id, @timezone_offset_minutes
+  /// Outputs          : @result_code, @result_message
+  /// Result sets      : (1) List&lt;ActivityTopicItem&gt;  — topics read
+  ///                    (2) List&lt;ActivityQuizItem&gt;   — quiz attempts
+  /// </summary>
+  public async Task<ApiResponse<StreakBadgeReport>> GetStreakBadgeReportAsync(
+      int userId,
+      int timezoneOffsetMinutes = 0)
+  {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@user_id",                 userId);
+    parameters.Add("@timezone_offset_minutes", timezoneOffsetMinutes);
+    parameters.Add("@result_code",    dbType: DbType.Int32,  direction: ParameterDirection.Output);
+    parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+    using var multi = await connection.QueryMultipleAsync(
+        "sp_GetStreakBadgeReport", parameters, commandType: CommandType.StoredProcedure);
+
+    // Read the two result sets in the order the stored procedure emits them
+    var topics = (await multi.ReadAsync<ActivityTopicItem>()).ToList();
+    var quizzes = (await multi.ReadAsync<ActivityQuizItem>()).ToList();
+
+    var resultCode    = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+
+    return new ApiResponse<StreakBadgeReport> {
+      Success = resultCode == 0,
+      Data = new StreakBadgeReport {
+        Topics  = topics,
+        Quizzes = quizzes
+      },
+      Message    = resultMessage,
+      ResultCode = resultCode
+    };
+  }
 }
