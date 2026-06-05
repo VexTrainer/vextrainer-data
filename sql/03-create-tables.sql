@@ -834,4 +834,15 @@ GO
 ALTER TABLE [dbo].[t_bookmark]  WITH CHECK ADD  CONSTRAINT [fk_t_bookmark_t_topic_topic_id] FOREIGN KEY([topic_id]) REFERENCES [dbo].[t_topic] ([topic_id])
 GO
 
+CREATE TABLE [dbo].[t_site_stats] (
+    stats_id      INT          NOT NULL CONSTRAINT pk_site_stats PRIMARY KEY clustered,
+    total_modules INT          NOT NULL,
+    total_lessons INT          NOT NULL,
+    total_topics  INT          NOT NULL,
+    students      INT          NOT NULL,
+    topics_read   BIGINT       NOT NULL,
+    last_updated  DATETIME2    NOT NULL
+)
+GO
+
 -- END OF SCRIPT

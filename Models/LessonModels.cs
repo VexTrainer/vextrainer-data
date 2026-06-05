@@ -293,3 +293,16 @@ public class Bookmark {
   public int TopicId { get; set; }
   public string TopicTitle { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Cached site-wide aggregate metrics read from t_site_stats via sp_GetSiteStats.
+/// Column aliases in the stored procedure match these property names (case-insensitive Dapper mapping).
+/// </summary>
+public class SiteStats
+{
+    public int   TotalModules { get; set; }
+    public int   TotalLessons { get; set; }
+    public int   TotalTopics  { get; set; }
+    public int   Students     { get; set; }
+    public long  TopicsRead   { get; set; }
+}

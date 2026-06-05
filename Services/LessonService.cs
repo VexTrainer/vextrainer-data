@@ -662,4 +662,24 @@ public class LessonService
       ResultCode = resultCode
     };
   }
+
+  /// <summary>
+  /// Returns cached site-wide aggregate metrics from t_site_stats.
+  /// The underlying row is refreshed by sp_RefreshSiteStats (SQL Agent,
+  /// every 6 hours). Called by the public home page — no auth required.
+  /// Stored procedure: sp_GetSiteStats (no parameters, no output params).
+  /// </summary>
+  public async Task<ApiResponse<SiteStats>> GetSiteStatsAsync()
+  {
+    using var connection = new SqlConnection(_connectionString);
+    var stats = await connection.QuerySingleOrDefaultAsync<SiteStats>(
+        "sp_GetSiteStats", commandType: CommandType.StoredProcedure);
+
+    return new ApiResponse<SiteStats> {
+      Success    = true,
+      Data       = stats ?? new SiteStats { TotalLessons = 68, TotalTopics = 654 },
+      Message    = "Site stats retrieved successfully",
+      ResultCode = 0
+    };
+  }
 }

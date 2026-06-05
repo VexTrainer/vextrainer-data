@@ -9,5 +9,7 @@ INSERT dbo.[t_question_type] VALUES
    (4, 'True or False'),
    (5, 'Match pairs');
 go
+INSERT dbo.t_site_stats VALUES (1, 0, 0, 0, 0, 0, getutcdate());
+GO
 
 --END OF SCRIPT
