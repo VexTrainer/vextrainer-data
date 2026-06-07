@@ -189,7 +189,7 @@ CREATE TABLE [dbo].[t_category](
     -- Optional longer description of the category
     [description]        [nvarchar](500) NULL,
     -- Controls category sort order in listings - defaults to 1
-    [display_order]      [tinyint]      NULL,
+    [display_order]      [smallint]      NULL,
     -- Active flag - inactive categories hidden from users
     [is_active]          [bit]          NULL,
     -- Clustered PK - category lookups always by category_id
@@ -451,7 +451,7 @@ CREATE TABLE [dbo].[t_quiz](
     -- Must be kept in sync with actual rows in t_question
     [total_questions] [tinyint]      NOT NULL,
     -- Controls quiz sort order within its category
-    [display_order]   [tinyint]      NULL,
+    [display_order]   [smallint]      NULL,
     -- Active flag - inactive quizzes hidden from students
     [is_active]       [bit]          NULL,
     -- Quiz creation timestamp in UTC

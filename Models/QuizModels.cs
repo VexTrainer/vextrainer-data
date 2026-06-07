@@ -9,8 +9,8 @@ public class Category
     public short? ParentCategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public byte DisplayOrder { get; set; }
-    public List<Category>? Subcategories { get; set; }
+  public short DisplayOrder { get; set; }
+  public List<Category>? Subcategories { get; set; }
 }
 
 /// <summary>
@@ -23,7 +23,7 @@ public class Quiz
     public string? QuizDescription { get; set; }
     public byte TotalQuestions { get; set; }
     public decimal? PassingScore { get; set; }
-    public byte DisplayOrder { get; set; }
+    public short DisplayOrder { get; set; }
     public int UserAttempts { get; set; }
     public decimal? UserBestScore { get; set; }
     public bool IsCompleted { get; set; }
