@@ -11,19 +11,19 @@ namespace VexTrainer.Data.Services;
 ///
 /// A quiz attempt follows a well-defined lifecycle managed across several methods:
 ///
-///   1. GetCategoriesAsync       — browse the category tree to find a quiz
-///   2. GetQuizzesByCategoryAsync — list quizzes within a chosen category
-///   3. GetQuizDetailsAsync       — inspect a quiz before starting
-///   4. StartQuizAttemptAsync     — create an attempt record; receive an attempt ID
-///   5. GetQuizQuestionsAsync     — fetch the randomized question set for that attempt
-///   6. SubmitAnswerAsync         — submit one answer at a time; receive immediate feedback
-///   7. CompleteQuizAsync         — close the attempt and calculate the final score
-///   8. GetQuizResultsAsync       — retrieve the full per-question result breakdown
+///   1. GetCategoriesAsync       â browse the category tree to find a quiz
+///   2. GetQuizzesByCategoryAsync â list quizzes within a chosen category
+///   3. GetQuizDetailsAsync       â inspect a quiz before starting
+///   4. StartQuizAttemptAsync     â create an attempt record; receive an attempt ID
+///   5. GetQuizQuestionsAsync     â fetch the randomized question set for that attempt
+///   6. SubmitAnswerAsync         â submit one answer at a time; receive immediate feedback
+///   7. CompleteQuizAsync         â close the attempt and calculate the final score
+///   8. GetQuizResultsAsync       â retrieve the full per-question result breakdown
 ///
 /// Additional methods support interrupted sessions and ongoing engagement:
-///   - ResumeQuizAttemptAsync    — re-enter an in-progress attempt
-///   - GetUserDashboardAsync     — aggregate stats and recent activity
-///   - GetUserQuizHistoryAsync   — paginated history of past attempts
+///   - ResumeQuizAttemptAsync    â re-enter an in-progress attempt
+///   - GetUserDashboardAsync     â aggregate stats and recent activity
+///   - GetUserQuizHistoryAsync   â paginated history of past attempts
 ///
 /// Several methods use QueryMultiple because the stored procedure returns more than one
 /// result set in a single round trip. Result sets must always be read in the exact order
@@ -43,7 +43,7 @@ public class QuizService {
   /// the parent-child hierarchy in memory: categories with no ParentCategoryId become
   /// root nodes, and all others are attached to their parent's Subcategories list via
   /// a dictionary lookup. The response contains only root categories, each already
-  /// populated with its nested children — the client does not need to reassemble the
+  /// populated with its nested children â the client does not need to reassemble the
   /// tree itself.
   ///
   /// Note: this method takes no @user_id because categories are global and not
@@ -160,7 +160,7 @@ public class QuizService {
   /// Creates a new attempt record in the database and returns the attempt ID and
   /// total question count needed to drive the quiz session.
   ///
-  /// This must be called before GetQuizQuestionsAsync — the attempt ID returned here
+  /// This must be called before GetQuizQuestionsAsync â the attempt ID returned here
   /// is the key that ties all subsequent answer submissions and the final completion
   /// call back to this specific session. The stored procedure may enforce business rules
   /// such as attempt limits per quiz, returning a non-zero result_code if the user is
@@ -209,12 +209,12 @@ public class QuizService {
   /// <summary>
   /// Fetches the randomized question set and their answer options for an active attempt.
   ///
-  /// The stored procedure returns two result sets — questions and answers — in a single
+  /// The stored procedure returns two result sets â questions and answers â in a single
   /// round trip. Answers are returned as a flat list (not pre-grouped) and assembled onto
   /// their parent questions in memory by grouping on QuestionId. This avoids shipping a
   /// denormalized result set with repeated question data for every answer row.
   ///
-  /// IMPORTANT: Result sets must be read in order — questions first, answers second —
+  /// IMPORTANT: Result sets must be read in order â questions first, answers second â
   /// matching the sequence the stored procedure emits them.
   ///
   /// The @user_id is included so the procedure can verify the attempt belongs to that
@@ -266,7 +266,7 @@ public class QuizService {
   /// Records a single answer submission and returns immediate feedback to the user.
   ///
   /// The answer is passed as a JSON string (@user_answer_json) to support flexible
-  /// question types — single-choice, multi-choice, ordering, and so on — without
+  /// question types â single-choice, multi-choice, ordering, and so on â without
   /// requiring a different stored procedure per type. The database evaluates correctness
   /// and returns the explanation, the correct answer (also as JSON for the client to
   /// render), the running score, and the count of questions answered so far.
@@ -329,7 +329,7 @@ public class QuizService {
   /// complete so it cannot receive further answer submissions. The final score,
   /// correct answer count, total question count, and pass/fail flag are all returned
   /// as OUTPUT parameters rather than a result set because only a single row is ever
-  /// produced — avoiding the overhead of a result set for scalar values.
+  /// produced â avoiding the overhead of a result set for scalar values.
   ///
   /// After this call succeeds, GetQuizResultsAsync can be used to retrieve the full
   /// per-question breakdown for a review screen.
@@ -384,9 +384,9 @@ public class QuizService {
   /// post-quiz review screen.
   ///
   /// The stored procedure returns two result sets in a single round trip:
-  ///   1. A summary row (overall score, pass/fail, time taken) → QuizResultSummary
+  ///   1. A summary row (overall score, pass/fail, time taken) â QuizResultSummary
   ///   2. A per-question list showing what the user answered, whether it was correct,
-  ///      and the explanation → List&lt;QuestionResult&gt;
+  ///      and the explanation â List&lt;QuestionResult&gt;
   ///
   /// If the summary row is missing (e.g., the attempt ID is invalid), an empty
   /// QuizResultSummary is substituted so the caller always receives a valid object.
@@ -417,7 +417,7 @@ public class QuizService {
     return new ApiResponse<QuizResults> {
       Success = resultCode == 0,
       Data = new QuizResults {
-        Summary = summary ?? new QuizResultSummary(),   // never null — caller can always bind
+        Summary = summary ?? new QuizResultSummary(),   // never null â caller can always bind
         Questions = questions
       },
       Message = resultMessage,
@@ -431,8 +431,8 @@ public class QuizService {
   ///
   /// The stored procedure returns two result sets:
   ///   1. The attempt's metadata (quiz ID, question count, time elapsed, etc.)
-  ///      → ResumeQuizData
-  ///   2. A list of question IDs the user has already answered → List&lt;int&gt;
+  ///      â ResumeQuizData
+  ///   2. A list of question IDs the user has already answered â List&lt;int&gt;
   ///
   /// The answered question IDs are attached to the ResumeQuizData object before
   /// returning so the client can skip already-answered questions and display an
@@ -480,8 +480,8 @@ public class QuizService {
   ///
   /// The stored procedure returns two result sets in a single round trip:
   ///   1. A stats summary row (total quizzes taken, overall pass rate, average score,
-  ///      etc.) → UserDashboard
-  ///   2. A list of the user's most recent quiz attempts → List&lt;RecentAttempt&gt;
+  ///      etc.) â UserDashboard
+  ///   2. A list of the user's most recent quiz attempts â List&lt;RecentAttempt&gt;
   ///
   /// The recent attempts are attached to the UserDashboard object before returning.
   /// If no stats row exists (brand-new user with no activity), an empty UserDashboard
@@ -515,7 +515,7 @@ public class QuizService {
 
     return new ApiResponse<UserDashboard> {
       Success = resultCode == 0,
-      Data = stats ?? new UserDashboard(),   // never null — caller can always bind
+      Data = stats ?? new UserDashboard(),   // never null â caller can always bind
       Message = resultMessage,
       ResultCode = resultCode
     };
@@ -562,6 +562,57 @@ public class QuizService {
         PageSize = pageSize
       },
       Message = resultMessage,
+      ResultCode = resultCode
+    };
+  }
+
+  /// <summary>
+  /// Returns N parent categories (modules) starting at <paramref name="offset"/>,
+  /// together with all their subcategories (lessons), in a single flat result set
+  /// assembled into a tree in memory — identical to GetCategoriesAsync but paged.
+  /// The <c>HasMore</c> flag is resolved by the stored procedure so the client
+  /// knows whether to offer a "Load more" action.
+  ///
+  /// Stored procedure : sp_GetCategoriesPaged
+  /// Inputs           : @offset, @page_size
+  /// Output params    : @has_more, @result_code, @result_message
+  /// Result set       : Flat List<Category> (hierarchy assembled in .NET)
+  /// </summary>
+  public async Task<ApiResponse<CategoryPage>> GetCategoriesPagedAsync(int offset, int pageSize) {
+    using var connection = new SqlConnection(_connectionString);
+    var parameters = new DynamicParameters();
+    parameters.Add("@offset",          offset);
+    parameters.Add("@page_size",       pageSize);
+    parameters.Add("@has_more",        dbType: DbType.Boolean, direction: ParameterDirection.Output);
+    parameters.Add("@result_code",     dbType: DbType.Int32,   direction: ParameterDirection.Output);
+    parameters.Add("@result_message",  dbType: DbType.String,  size: 500, direction: ParameterDirection.Output);
+
+    var categories = (await connection.QueryAsync<Category>(
+        "sp_GetCategoriesPaged", parameters, commandType: CommandType.StoredProcedure)).ToList();
+
+    var resultCode    = parameters.Get<int>("@result_code");
+    var resultMessage = parameters.Get<string>("@result_message");
+    var hasMore       = parameters.Get<bool>("@has_more");
+
+    // Build parent-child hierarchy in memory (same pattern as GetCategoriesAsync)
+    var categoryDict   = categories.ToDictionary(c => c.CategoryId);
+    var rootCategories = new List<Category>();
+
+    foreach (var category in categories) {
+      if (category.ParentCategoryId == null) {
+        rootCategories.Add(category);
+      }
+      else if (categoryDict.ContainsKey(category.ParentCategoryId.Value)) {
+        var parent = categoryDict[category.ParentCategoryId.Value];
+        parent.Subcategories ??= new List<Category>();
+        parent.Subcategories.Add(category);
+      }
+    }
+
+    return new ApiResponse<CategoryPage> {
+      Success    = resultCode == 0,
+      Data       = new CategoryPage { Categories = rootCategories, HasMore = hasMore },
+      Message    = resultMessage,
       ResultCode = resultCode
     };
   }

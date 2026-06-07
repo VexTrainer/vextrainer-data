@@ -8,9 +8,21 @@ public class Category
     public short CategoryId { get; set; }
     public short? ParentCategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
-    public string? Description { get; set; }
+    // public string? Description { get; set; }
   public short DisplayOrder { get; set; }
   public List<Category>? Subcategories { get; set; }
+}
+
+
+/// <summary>
+/// Paged category response — N parent categories with their subcategories,
+/// plus a flag indicating whether more pages exist.
+/// Returned by sp_GetCategoriesPaged via GetCategoriesPagedAsync.
+/// </summary>
+public class CategoryPage
+{
+    public List<Category> Categories { get; set; } = new();
+    public bool HasMore { get; set; }
 }
 
 /// <summary>
