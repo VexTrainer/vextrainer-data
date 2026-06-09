@@ -642,8 +642,7 @@ public class LessonService
     parameters.Add("@result_code",    dbType: DbType.Int32,  direction: ParameterDirection.Output);
     parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
 
-    using var multi = await connection.QueryMultipleAsync(
-        "sp_GetStreakBadgeReport", parameters, commandType: CommandType.StoredProcedure);
+    using var multi = await connection.QueryMultipleAsync("sp_GetStreakBadgeReport", parameters, commandType: CommandType.StoredProcedure);
 
     // Read the two result sets in the order the stored procedure emits them
     var topics = (await multi.ReadAsync<ActivityTopicItem>()).ToList();
@@ -672,8 +671,7 @@ public class LessonService
   public async Task<ApiResponse<SiteStats>> GetSiteStatsAsync()
   {
     using var connection = new SqlConnection(_connectionString);
-    var stats = await connection.QuerySingleOrDefaultAsync<SiteStats>(
-        "sp_GetSiteStats", commandType: CommandType.StoredProcedure);
+    var stats = await connection.QuerySingleOrDefaultAsync<SiteStats>("sp_GetSiteStats", commandType: CommandType.StoredProcedure);
 
     return new ApiResponse<SiteStats> {
       Success    = true,
