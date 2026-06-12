@@ -127,10 +127,10 @@ CREATE TABLE [dbo].[t_session](
     [user_id]           [int]          NOT NULL,
     -- JWT access token - short-lived, used for API authentication
     -- varchar(255) accommodates standard JWT token lengths
-    [token]             [varchar](255) NOT NULL,
+    [token]             [varchar](512) NOT NULL,
     -- Refresh token - longer-lived, used to obtain new access tokens
     -- NULL until first token refresh occurs
-    [refresh_token]     [varchar](255) NULL,
+    [refresh_token]     [varchar](512) NULL,
     -- Session creation timestamp in UTC
     [created_date]      [datetime2](7) NOT NULL,
     -- Access token expiry timestamp in UTC

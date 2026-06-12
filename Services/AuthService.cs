@@ -329,26 +329,23 @@ public class AuthService
     /// </summary>
     public async Task<ApiResponse<AuthResponse>> RefreshTokenAsync(string refreshToken)
     {
-        // Pre-generate placeholder tokens; they are passed to the SP so it can atomically
-        // swap the session. The final token is regenerated below once we have the user info.
-        var (newToken, newExpiryDate) = _tokenService.GenerateAccessToken(0, "", "");
-        var newRefreshToken = _tokenService.GenerateRefreshToken();
-
         using var connection = new SqlConnection(_connectionString);
-        var parameters = new DynamicParameters();
-        parameters.Add("@refresh_token", refreshToken);
-        parameters.Add("@new_token", newToken);
-        parameters.Add("@new_refresh_token", newRefreshToken);
-        parameters.Add("@new_expiry_date", newExpiryDate);
-        parameters.Add("@user_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        parameters.Add("@user_name", dbType: DbType.String, size: 24, direction: ParameterDirection.Output);
-        parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
 
-        await connection.ExecuteAsync("sp_RefreshToken", parameters, commandType: CommandType.StoredProcedure);
+        // Step 1: Validate the refresh token and retrieve real user identity.
+        // This must happen BEFORE generating the access token so GenerateAccessToken
+        // receives actual userId/userName — not placeholder values (the previous bug).
+        var validateParams = new DynamicParameters();
+        validateParams.Add("@refresh_token", refreshToken,  DbType.AnsiString, size: 512);
+        validateParams.Add("@user_id",   dbType: DbType.Int32,  direction: ParameterDirection.Output);
+        validateParams.Add("@user_name", dbType: DbType.String, size: 96, direction: ParameterDirection.Output);
+        validateParams.Add("@role_name",   dbType: DbType.String, size: 64, direction: ParameterDirection.Output);
+        validateParams.Add("@result_code",    dbType: DbType.Int32,  direction: ParameterDirection.Output);
+        validateParams.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
 
-        var resultCode = parameters.Get<int>("@result_code");
-        var resultMessage = parameters.Get<string>("@result_message");
+        await connection.ExecuteAsync("sp_ValidateRefreshToken", validateParams, commandType: CommandType.StoredProcedure);
+
+        var resultCode    = validateParams.Get<int>("@result_code");
+        var resultMessage = validateParams.Get<string>("@result_message");
 
         if (resultCode != 0)
         {
@@ -360,11 +357,41 @@ public class AuthService
             };
         }
 
-        var userId = parameters.Get<int>("@user_id");
-        var userName = parameters.Get<string>("@user_name");
+        var userId   = validateParams.Get<int>("@user_id");
+        var userName = validateParams.Get<string>("@user_name");
+        var roleName = validateParams.Get<string>("@role_name") ?? "User";
 
-        // Regenerate the token with the real user identity now that we have it
-        (newToken, newExpiryDate) = _tokenService.GenerateAccessToken(userId, userName, "User");
+        // Step 2: Generate the REAL access token now that we have actual user identity.
+        // This token is what gets stored in t_session AND returned to the client — they match.
+        var (newToken, newExpiryDate) = _tokenService.GenerateAccessToken(userId, userName, roleName);
+        var newRefreshToken           = _tokenService.GenerateRefreshToken();
+
+        // Step 3: Rotate both tokens in the session with the real access token.
+        var rotateParams = new DynamicParameters();
+        rotateParams.Add("@refresh_token",     refreshToken,    DbType.AnsiString, size: 512);
+        rotateParams.Add("@new_token",         newToken,        DbType.AnsiString, size: 512);
+        rotateParams.Add("@new_refresh_token", newRefreshToken, DbType.AnsiString, size: 512);
+        rotateParams.Add("@new_expiry_date",   newExpiryDate);
+        rotateParams.Add("@user_id",   dbType: DbType.Int32,  direction: ParameterDirection.Output);
+        rotateParams.Add("@user_name", dbType: DbType.String, size: 96,  direction: ParameterDirection.Output);
+        rotateParams.Add("@role_name", dbType: DbType.String, size: 64,  direction: ParameterDirection.Output);
+        rotateParams.Add("@result_code",    dbType: DbType.Int32,  direction: ParameterDirection.Output);
+        rotateParams.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
+
+        await connection.ExecuteAsync("sp_RefreshToken", rotateParams, commandType: CommandType.StoredProcedure);
+
+        resultCode    = rotateParams.Get<int>("@result_code");
+        resultMessage = rotateParams.Get<string>("@result_message");
+
+        if (resultCode != 0)
+        {
+            return new ApiResponse<AuthResponse>
+            {
+                Success    = false,
+                Message    = resultMessage,
+                ResultCode = resultCode
+            };
+        }
 
         return new ApiResponse<AuthResponse>
         {
@@ -377,7 +404,7 @@ public class AuthService
                 Token = newToken,
                 RefreshToken = newRefreshToken,
                 ExpiryDate = newExpiryDate,
-                RoleName = "User"
+                RoleName     = roleName
             },
             Message = resultMessage,
             ResultCode = 0
@@ -398,7 +425,7 @@ public class AuthService
     {
         using var connection = new SqlConnection(_connectionString);
         var parameters = new DynamicParameters();
-        parameters.Add("@token", token);
+        parameters.Add("@token", token, DbType.AnsiString, size: 512);
         parameters.Add("@result_code", dbType: DbType.Int32, direction: ParameterDirection.Output);
         parameters.Add("@result_message", dbType: DbType.String, size: 500, direction: ParameterDirection.Output);
 
@@ -557,8 +584,8 @@ public class AuthService
         using var connection = new SqlConnection(_connectionString);
         var parameters = new DynamicParameters();
         parameters.Add("@user_id", userId);
-        parameters.Add("@token", token);
-        parameters.Add("@refresh_token", refreshToken);
+        parameters.Add("@token",         token,        DbType.AnsiString, size: 512);
+        parameters.Add("@refresh_token", refreshToken, DbType.AnsiString, size: 512);
         parameters.Add("@expiry_date", expiryDate);
         parameters.Add("@device_info", deviceInfo);
         parameters.Add("@session_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
